@@ -13,8 +13,6 @@ create table public.profiles (
   photo_url text,
   bio text default '',
   city text default '',
-  lat double precision,
-  lng double precision,
   onboarded boolean not null default false,
   certified boolean not null default false,
   profile_boost_until timestamptz,
@@ -194,6 +192,43 @@ create policy "Chacun gère ses propres abonnements"
   using (auth.uid() = follower_id)
   with check (auth.uid() = follower_id);
 
+-- ============ PROFILE LOCATIONS (position live, à part de profiles) ============
+-- Table séparée pour que la position GPS en direct ne soit lisible que par le
+-- propriétaire et les utilisateurs qui le suivent (pas tous les utilisateurs
+-- connectés comme le reste du profil).
+create table public.profile_locations (
+  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  lat double precision not null,
+  lng double precision not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.profile_locations enable row level security;
+
+create policy "Voir sa position ou celle de ses amis suivis"
+  on public.profile_locations for select
+  to authenticated
+  using (
+    auth.uid() = profile_id
+    or exists (
+      select 1 from public.follows
+      where follower_id = auth.uid() and following_id = profile_id
+    )
+  );
+
+create policy "Chacun crée uniquement sa propre position"
+  on public.profile_locations for insert
+  to authenticated
+  with check (auth.uid() = profile_id);
+
+create policy "Chacun modifie uniquement sa propre position"
+  on public.profile_locations for update
+  to authenticated
+  using (auth.uid() = profile_id)
+  with check (auth.uid() = profile_id);
+
+alter publication supabase_realtime add table public.profile_locations;
+
 -- ============ MESSAGES ============
 create table public.messages (
   id uuid primary key default gen_random_uuid(),
@@ -301,15 +336,22 @@ insert into public.venues (id, name, address, photo_url, lat, lng, sports, is_pr
     array['natation', 'musculation'], false, false, '6h - 20h');
 
 -- 4 profils de démo (non liés à des comptes auth réels)
-insert into public.profiles (id, pseudo, first_name, last_name, age, radius_km, sports, photo_url, bio, city, lat, lng, onboarded, certified, sessions_count, tournaments_count) values
+insert into public.profiles (id, pseudo, first_name, last_name, age, radius_km, sports, photo_url, bio, city, onboarded, certified, sessions_count, tournaments_count) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'LéaSprint', 'Léa', 'Martin', 26, 15,
-    array['football', 'athletisme'], 'https://i.pravatar.cc/150?u=leasprint', 'Toujours partante pour un match !', 'Paris', 48.860, 2.370, true, true, 18, 2),
+    array['football', 'athletisme'], 'https://i.pravatar.cc/150?u=leasprint', 'Toujours partante pour un match !', 'Paris', true, true, 18, 2),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'MaxHoops', 'Maxime', 'Dubois', 29, 20,
-    array['basketball'], 'https://i.pravatar.cc/150?u=maxhoops', 'Basketteur du dimanche devenu accro.', 'Paris', 48.840, 2.385, true, false, 7, 0),
+    array['basketball'], 'https://i.pravatar.cc/150?u=maxhoops', 'Basketteur du dimanche devenu accro.', 'Paris', true, false, 7, 0),
   ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'SofiaSmash', 'Sofia', 'Nasri', 31, 10,
-    array['tennis', 'padel'], 'https://i.pravatar.cc/150?u=sofiasmash', 'Tennis tous les week-ends, niveau intermédiaire.', 'Paris', 48.855, 2.260, true, true, 24, 5),
+    array['tennis', 'padel'], 'https://i.pravatar.cc/150?u=sofiasmash', 'Tennis tous les week-ends, niveau intermédiaire.', 'Paris', true, true, 24, 5),
   ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'TomFit', 'Thomas', 'Bernard', 24, 25,
-    array['musculation', 'natation'], 'https://i.pravatar.cc/150?u=tomfit', 'Préparation physique et natation.', 'Paris', 48.850, 2.400, true, false, 3, 0);
+    array['musculation', 'natation'], 'https://i.pravatar.cc/150?u=tomfit', 'Préparation physique et natation.', 'Paris', true, false, 3, 0);
+
+-- Positions de démo (table à part, cf. RLS profile_locations)
+insert into public.profile_locations (profile_id, lat, lng) values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 48.860, 2.370),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 48.840, 2.385),
+  ('cccccccc-cccc-cccc-cccc-cccccccccccc', 48.855, 2.260),
+  ('dddddddd-dddd-dddd-dddd-dddddddddddd', 48.850, 2.400);
 
 -- 4 évènements de démo
 insert into public.sport_events (id, host_id, host_pseudo, title, sport, event_date, event_time, kind, status, location_name, address, description, max_players, teams, participants, boosted) values

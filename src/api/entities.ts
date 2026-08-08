@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
-import type { Message, Profile, Purchase, ShopItem, SportEvent, Venue, VenueReview } from '../types'
+import type { Message, Profile, ProfileLocation, Purchase, ShopItem, SportEvent, Venue, VenueReview } from '../types'
 
 function client() {
   if (!supabase) throw new Error('Supabase non configuré : renseigne VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY')
@@ -42,6 +42,21 @@ export async function searchProfiles(query: string, excludeId: string): Promise<
     .limit(15)
   if (error) throw error
   return (data ?? []) as Profile[]
+}
+
+// ============ PROFILE LOCATIONS (position live) ============
+export async function upsertLocation(profileId: string, lat: number, lng: number): Promise<void> {
+  const { error } = await client()
+    .from('profile_locations')
+    .upsert({ profile_id: profileId, lat, lng, updated_at: new Date().toISOString() })
+  if (error) throw error
+}
+
+export async function listLocations(profileIds: string[]): Promise<ProfileLocation[]> {
+  if (profileIds.length === 0) return []
+  const { data, error } = await client().from('profile_locations').select('*').in('profile_id', profileIds)
+  if (error) throw error
+  return (data ?? []) as ProfileLocation[]
 }
 
 // ============ SPORT EVENTS ============

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { listFollowingIds, listProfilesByIds, listVenues } from '../api/entities'
+import { listFollowingIds, listLocations, listProfilesByIds, listVenues } from '../api/entities'
 import { useProfile } from '../hooks/useProfile'
 import { useLiveGeolocation } from '../hooks/useLiveGeolocation'
 import { VenueSheet } from '../components/VenueSheet'
@@ -25,11 +25,11 @@ function circleIcon(photoUrl: string | null | undefined, borderColor: string): L
 }
 
 export function Plan() {
-  const { profile, userId } = useProfile()
+  const { userId } = useProfile()
   const [searchParams, setSearchParams] = useSearchParams()
   const [openVenue, setOpenVenue] = useState<Venue | null>(null)
 
-  useLiveGeolocation(userId, true)
+  const myPosition = useLiveGeolocation(userId, true)
 
   const venuesQuery = useQuery({ queryKey: ['venues'], queryFn: listVenues })
   const followingQuery = useQuery({
@@ -38,14 +38,25 @@ export function Plan() {
     enabled: Boolean(userId),
   })
   const friendsQuery = useQuery({
-    queryKey: ['friends-positions', followingQuery.data],
+    queryKey: ['friends', followingQuery.data],
     queryFn: () => listProfilesByIds(followingQuery.data ?? []),
+    enabled: Boolean(followingQuery.data),
+  })
+  const friendLocationsQuery = useQuery({
+    queryKey: ['friends-locations', followingQuery.data],
+    queryFn: () => listLocations(followingQuery.data ?? []),
     enabled: Boolean(followingQuery.data),
     refetchInterval: 15000,
   })
 
   const venues = useMemo(() => venuesQuery.data ?? [], [venuesQuery.data])
-  const friends = (friendsQuery.data ?? []).filter((f) => f.lat != null && f.lng != null)
+  const friends = useMemo(() => {
+    const locations = new Map((friendLocationsQuery.data ?? []).map((l) => [l.profile_id, l]))
+    return (friendsQuery.data ?? []).flatMap((f) => {
+      const location = locations.get(f.id)
+      return location ? [{ ...f, lat: location.lat, lng: location.lng }] : []
+    })
+  }, [friendsQuery.data, friendLocationsQuery.data])
 
   useEffect(() => {
     const venueId = searchParams.get('venue')
@@ -55,9 +66,9 @@ export function Plan() {
   }, [searchParams, venues])
 
   const center = useMemo<[number, number]>(() => {
-    if (profile?.lat != null && profile?.lng != null) return [profile.lat, profile.lng]
+    if (myPosition) return [myPosition.lat, myPosition.lng]
     return DEFAULT_CENTER
-  }, [profile])
+  }, [myPosition])
 
   function closeVenue() {
     setOpenVenue(null)
@@ -86,7 +97,7 @@ export function Plan() {
           {friends.map((friend) => (
             <Marker
               key={friend.id}
-              position={[friend.lat as number, friend.lng as number]}
+              position={[friend.lat, friend.lng]}
               icon={circleIcon(friend.photo_url, '#38bdf8')}
             />
           ))}

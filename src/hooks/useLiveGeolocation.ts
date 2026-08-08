@@ -1,14 +1,19 @@
-import { useEffect } from 'react'
-import { updateProfile } from '../api/entities'
+import { useEffect, useState } from 'react'
+import { upsertLocation } from '../api/entities'
 
-// Met à jour lat/lng du profil courant en direct via watchPosition.
+// Met à jour la position (table profile_locations) en direct via watchPosition
+// et renvoie la dernière position connue localement.
 export function useLiveGeolocation(profileId: string | null, enabled: boolean) {
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null)
+
   useEffect(() => {
     if (!enabled || !profileId || !('geolocation' in navigator)) return
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        updateProfile(profileId, { lat: pos.coords.latitude, lng: pos.coords.longitude }).catch(() => {})
+        const { latitude: lat, longitude: lng } = pos.coords
+        setPosition({ lat, lng })
+        upsertLocation(profileId, lat, lng).catch(() => {})
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 },
@@ -16,4 +21,6 @@ export function useLiveGeolocation(profileId: string | null, enabled: boolean) {
 
     return () => navigator.geolocation.clearWatch(watchId)
   }, [profileId, enabled])
+
+  return position
 }

@@ -13,8 +13,6 @@ export interface Profile {
   photo_url: string | null
   bio: string
   city: string
-  lat: number | null
-  lng: number | null
   onboarded: boolean
   certified: boolean
   profile_boost_until: string | null
@@ -77,6 +75,13 @@ export interface Message {
   from_pseudo: string
   text: string
   created_at: string
+}
+
+export interface ProfileLocation {
+  profile_id: string
+  lat: number
+  lng: number
+  updated_at: string
 }
 
 export interface Follow {
