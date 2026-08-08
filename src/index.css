@@ -1,0 +1,102 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #070b16;
+  --color-surface: #0b1020;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #070b16;
+  color: #fff;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 768px) {
+  html,
+  body {
+    background: radial-gradient(circle at 50% 0%, #0b1020 0%, #070b16 60%, #050810 100%);
+    background-attachment: fixed;
+  }
+}
+
+#root {
+  min-height: 100svh;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+/* hide scrollbar for horizontal chip rows */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.leaflet-container {
+  background: #0b1020 !important;
+  font-family: inherit;
+}
+
+.sc-calendar {
+  --rdp-accent-color: #34d399;
+  --rdp-accent-background-color: rgba(52, 211, 153, 0.15);
+  --rdp-today-color: #34d399;
+  color: #fff;
+}
+.sc-calendar .rdp-day_button {
+  color: #fff;
+}
+.sc-calendar .rdp-weekday {
+  color: rgba(255, 255, 255, 0.4);
+}
+.sc-calendar .rdp-selected .rdp-day_button {
+  border-color: #34d399 !important;
+}
+.sc-calendar .has-event .rdp-day_button::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: #34d399;
+}
+.sc-calendar .rdp-day {
+  position: relative;
+}
+
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-live {
+  animation: pulse-live 1.6s ease-in-out infinite;
+}
