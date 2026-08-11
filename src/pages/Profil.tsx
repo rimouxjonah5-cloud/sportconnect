@@ -1,8 +1,10 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BadgeCheck, Camera, LogOut } from 'lucide-react'
+import { BadgeCheck, Camera, LogOut, ShieldCheck } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useProfile } from '../hooks/useProfile'
+import { useIsAdmin } from '../hooks/useIsAdmin'
 import { countFollowers, listFollowingIds } from '../api/entities'
 import { SPORTS } from '../data/sports'
 import { TROPHIES } from '../data/trophies'
@@ -10,6 +12,8 @@ import { SectionTitle } from '../components/SectionTitle'
 
 export function Profil() {
   const { profile, userId, updateProfile } = useProfile()
+  const navigate = useNavigate()
+  const isAdmin = useIsAdmin()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
 
@@ -184,6 +188,17 @@ export function Profil() {
           })}
         </div>
       </section>
+
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={() => navigate('/admin')}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 py-3 text-sm font-semibold text-emerald-400 hover:bg-emerald-400/20"
+        >
+          <ShieldCheck size={16} />
+          Panneau admin
+        </button>
+      )}
 
       <button
         type="button"

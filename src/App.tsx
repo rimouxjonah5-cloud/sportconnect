@@ -13,6 +13,7 @@ import { Calendrier } from './pages/Calendrier'
 import { Avis } from './pages/Avis'
 import { Profil } from './pages/Profil'
 import { Boutique } from './pages/Boutique'
+import { Admin } from './pages/Admin'
 import { PageNotFound } from './pages/PageNotFound'
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
         <Route path="/avis" element={<Avis />} />
         <Route path="/profil" element={<Profil />} />
         <Route path="/boutique" element={<Boutique />} />
+        <Route path="/admin" element={<Admin />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

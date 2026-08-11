@@ -299,6 +299,43 @@ begin
 end;
 $$;
 
+-- ============ ADMIN ============
+-- Liste des utilisateurs admin. RLS activée sans AUCUNE policy : personne ne
+-- peut lire/écrire cette table via l'API, même les admins eux-mêmes — seules
+-- les fonctions security definer ci-dessous (qui s'exécutent avec les droits
+-- du propriétaire de la table, donc en contournant RLS) peuvent la consulter.
+create table public.app_admins (
+  id uuid primary key references public.profiles(id) on delete cascade
+);
+
+alter table public.app_admins enable row level security;
+
+create function public.is_admin()
+returns boolean
+language sql
+security definer set search_path = public
+stable
+as $$
+  select exists (select 1 from public.app_admins where id = auth.uid());
+$$;
+
+-- Nombre total d'utilisateurs inscrits, réservé aux admins.
+create function public.admin_user_count()
+returns bigint
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Accès refusé';
+  end if;
+  return (select count(*) from public.profiles);
+end;
+$$;
+
+-- Pour désigner un admin une fois qu'il a un compte (id depuis auth.users) :
+-- insert into public.app_admins (id) select id from auth.users where email = 'ton-email@exemple.com';
+
 -- ============ STORAGE (photos de profil / avatars) ============
 insert into storage.buckets (id, name, public)
   values ('photos', 'photos', true)

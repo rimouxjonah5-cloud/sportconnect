@@ -59,6 +59,19 @@ export async function listLocations(profileIds: string[]): Promise<ProfileLocati
   return (data ?? []) as ProfileLocation[]
 }
 
+// ============ ADMIN ============
+export async function isAdmin(): Promise<boolean> {
+  const { data, error } = await client().rpc('is_admin')
+  if (error) throw error
+  return Boolean(data)
+}
+
+export async function getAdminUserCount(): Promise<number> {
+  const { data, error } = await client().rpc('admin_user_count')
+  if (error) throw error
+  return Number(data)
+}
+
 // ============ SPORT EVENTS ============
 export async function listEvents(): Promise<SportEvent[]> {
   const { data, error } = await client()
